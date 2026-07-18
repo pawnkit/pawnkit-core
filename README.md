@@ -6,7 +6,7 @@ This keeps a diagnostic or workspace edit consistent as it moves between the par
 
 ## Status
 
-The module is pre-1.0. Breaking changes are recorded in [CHANGELOG.md](CHANGELOG.md); the version policy is in [docs/compatibility.md](docs/compatibility.md).
+The module is pre-1.0. the version policy is in [docs/compatibility.md](docs/compatibility.md).
 
 ## Install
 
