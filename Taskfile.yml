@@ -1,0 +1,75 @@
+version: 3
+
+tasks:
+  build:
+    desc: Build all packages
+    cmds:
+      - go build ./...
+
+  test:
+    desc: Run tests
+    cmds:
+      - go test ./...
+
+  test-race:
+    desc: Run tests with the race detector, shuffled
+    cmds:
+      - CGO_ENABLED=1 go test -race -shuffle=on ./...
+
+  vet:
+    desc: Run go vet
+    cmds:
+      - go vet ./...
+
+  fmt:
+    desc: Format code (gofmt + gofumpt)
+    cmds:
+      - golangci-lint fmt ./...
+
+  fmt-check:
+    desc: Fail if any file is not formatted
+    cmds:
+      - test -z "$(gofmt -l .)"
+
+  lint:
+    desc: Run golangci-lint
+    cmds:
+      - golangci-lint run ./...
+
+  lint-fix:
+    desc: Run golangci-lint and auto-fix what it can
+    cmds:
+      - golangci-lint run --fix ./...
+
+  tidy:
+    desc: Tidy go.mod/go.sum
+    cmds:
+      - go mod tidy
+
+  bench:
+    desc: Run benchmarks with allocation reporting
+    cmds:
+      - go test ./... -run=^$ -bench=. -benchmem
+
+  check:
+    desc: Run everything CI should run (format check, vet, lint, tests)
+    cmds:
+      - task: fmt-check
+      - task: vet
+      - task: lint
+      - task: test-race
+
+  fuzz-lineindex:
+    desc: Fuzz line-index position conversion for 30s
+    cmds:
+      - go test ./source -run=^$ -fuzz=FuzzLineIndexPosition -fuzztime=30s
+
+  fuzz-uri:
+    desc: Fuzz file URI round-tripping for 30s
+    cmds:
+      - go test ./source -run=^$ -fuzz=FuzzFileURIFilename -fuzztime=30s
+
+  fuzz-apply:
+    desc: Fuzz text edit application for 30s
+    cmds:
+      - go test ./textedit -run=^$ -fuzz=FuzzApply -fuzztime=30s
