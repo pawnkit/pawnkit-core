@@ -28,6 +28,7 @@ func NewLineIndex(content string) *LineIndex {
 	return &LineIndex{content: content, lineStarts: starts}
 }
 
+// Content returns the indexed text.
 func (idx *LineIndex) Content() string {
 	return idx.content
 }

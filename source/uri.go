@@ -13,6 +13,7 @@ import (
 // The zero value ("") is invalid.
 type URI string
 
+// IsValid reports whether u is nonempty.
 func (u URI) IsValid() bool {
 	return u != ""
 }

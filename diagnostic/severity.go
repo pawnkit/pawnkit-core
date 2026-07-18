@@ -2,9 +2,10 @@ package diagnostic
 
 import "fmt"
 
-// Zero value is invalid; use one of the named constants.
+// Severity classifies a diagnostic. Its zero value is invalid.
 type Severity uint8
 
+// Diagnostic severity levels.
 const (
 	SeverityError Severity = iota + 1
 	SeverityWarning
@@ -12,6 +13,7 @@ const (
 	SeverityHint
 )
 
+// IsValid reports whether s is a named severity.
 func (s Severity) IsValid() bool {
 	switch s {
 	case SeverityError, SeverityWarning, SeverityInfo, SeverityHint:
@@ -40,18 +42,22 @@ func (s Severity) String() string {
 type Tag string
 
 const (
-	TagDeprecated  Tag = "deprecated"
+	// TagDeprecated marks deprecated source.
+	TagDeprecated Tag = "deprecated"
+	// TagUnnecessary marks unnecessary source.
 	TagUnnecessary Tag = "unnecessary"
 )
 
-// Zero value is invalid; use FixSafe or FixReviewRequired.
+// FixKind classifies the review needed for a fix.
 type FixKind uint8
 
+// Fix review levels.
 const (
 	FixSafe FixKind = iota + 1
 	FixReviewRequired
 )
 
+// IsValid reports whether k is a named fix kind.
 func (k FixKind) IsValid() bool {
 	switch k {
 	case FixSafe, FixReviewRequired:

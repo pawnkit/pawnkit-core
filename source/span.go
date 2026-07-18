@@ -41,6 +41,7 @@ func (s Span) Validate() error {
 	return nil
 }
 
+// IsValid reports whether s passes validation.
 func (s Span) IsValid() bool {
 	return s.Validate() == nil
 }
@@ -50,6 +51,7 @@ func (s Span) IsEmpty() bool {
 	return s.Start == s.End
 }
 
+// Len returns the span length in bytes.
 func (s Span) Len() Offset {
 	return s.End - s.Start
 }

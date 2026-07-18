@@ -30,22 +30,27 @@ func NewSnapshot(file FileID, version int32, content string) (Snapshot, error) {
 	}, nil
 }
 
+// File returns the snapshot's file identifier.
 func (s Snapshot) File() FileID {
 	return s.file
 }
 
+// Version returns the caller-defined document version.
 func (s Snapshot) Version() int32 {
 	return s.version
 }
 
+// Content returns the immutable source text.
 func (s Snapshot) Content() string {
 	return s.content
 }
 
+// Lines returns the snapshot's line index.
 func (s Snapshot) Lines() *LineIndex {
 	return s.lines
 }
 
+// IsValid reports whether the snapshot has a valid file.
 func (s Snapshot) IsValid() bool {
 	return s.file.IsValid()
 }

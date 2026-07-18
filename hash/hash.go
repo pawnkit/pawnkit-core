@@ -18,10 +18,12 @@ func Content(data []byte) string {
 	return sha256Prefix + hex.EncodeToString(sum[:])
 }
 
+// String returns the hash of s.
 func String(s string) string {
 	return Content([]byte(s))
 }
 
+// Reader hashes all bytes read from r.
 func Reader(r io.Reader) (string, error) {
 	h := sha256.New()
 	if _, err := io.Copy(h, r); err != nil {

@@ -6,8 +6,7 @@ import (
 	"github.com/pawnkit/pawnkit-core/source"
 )
 
-// AnyVersion is a sentinel [DocumentEdit.Version] meaning "apply regardless
-// of the document's current version."
+// AnyVersion applies an edit regardless of the document's current version.
 const AnyVersion int32 = -1
 
 // Edit replaces Span with NewText. Its zero value is invalid.
@@ -16,14 +15,17 @@ type Edit struct {
 	NewText string
 }
 
+// IsValid reports whether the edit span is valid.
 func (e Edit) IsValid() bool {
 	return e.Span.IsValid()
 }
 
+// IsInsertion reports whether e inserts text without replacing bytes.
 func (e Edit) IsInsertion() bool {
 	return e.Span.IsEmpty() && e.NewText != ""
 }
 
+// IsDeletion reports whether e removes bytes without adding text.
 func (e Edit) IsDeletion() bool {
 	return !e.Span.IsEmpty() && e.NewText == ""
 }

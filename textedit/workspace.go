@@ -16,6 +16,7 @@ type SnapshotProvider interface {
 // MapSnapshotProvider is a trivial [SnapshotProvider] backed by a map.
 type MapSnapshotProvider map[source.FileID]source.Snapshot
 
+// Snapshot returns the snapshot for file.
 func (m MapSnapshotProvider) Snapshot(file source.FileID) (source.Snapshot, bool) {
 	s, ok := m[file]
 

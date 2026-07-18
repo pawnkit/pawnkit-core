@@ -10,6 +10,7 @@ import "sync"
 // [Registry.Intern].
 type FileID uint32
 
+// IsValid reports whether id is nonzero.
 func (id FileID) IsValid() bool {
 	return id != 0
 }
@@ -23,6 +24,7 @@ type Registry struct {
 	byID  []URI // byID[0] is unused; FileID 0 is invalid.
 }
 
+// NewRegistry returns an empty Registry.
 func NewRegistry() *Registry {
 	return &Registry{
 		byURI: make(map[URI]FileID),
@@ -81,6 +83,7 @@ func (r *Registry) URI(id FileID) (URI, bool) {
 	return r.byID[id], true
 }
 
+// Len returns the number of interned URIs.
 func (r *Registry) Len() int {
 	r.mu.RLock()
 	defer r.mu.RUnlock()

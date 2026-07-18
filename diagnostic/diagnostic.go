@@ -8,11 +8,13 @@ import (
 	"github.com/pawnkit/pawnkit-core/textedit"
 )
 
+// RelatedLocation adds context at another source span.
 type RelatedLocation struct {
 	Span    source.Span
 	Message string
 }
 
+// Validate checks the related span.
 func (r RelatedLocation) Validate() error {
 	if !r.Span.IsValid() {
 		return fmt.Errorf("%w: related location", ErrInvalidPrimary)
@@ -21,11 +23,13 @@ func (r RelatedLocation) Validate() error {
 	return nil
 }
 
+// Suppression records why a diagnostic was suppressed.
 type Suppression struct {
 	Kind   string
 	Reason string
 }
 
+// Validate checks the suppression kind.
 func (s Suppression) Validate() error {
 	if s.Kind == "" {
 		return ErrInvalidSuppression
@@ -34,12 +38,14 @@ func (s Suppression) Validate() error {
 	return nil
 }
 
+// Fix describes a diagnostic correction.
 type Fix struct {
 	Message string
 	Kind    FixKind
 	Edit    textedit.WorkspaceEdit
 }
 
+// Validate checks the fix kind and edits.
 func (f Fix) Validate() error {
 	if !f.Kind.IsValid() {
 		return fmt.Errorf("%w: invalid kind", ErrInvalidFix)
@@ -58,7 +64,7 @@ func (f Fix) Validate() error {
 	return nil
 }
 
-// Zero value is invalid; use New then Validate.
+// Diagnostic describes a source finding. Its zero value is invalid.
 type Diagnostic struct {
 	Code   string // stable, never repurposed, e.g. "pawnlint:unused-variable"
 	Source string
@@ -93,6 +99,7 @@ func New(code, src string, severity Severity, message string, primary source.Spa
 	}
 }
 
+// Validate checks all required fields and nested values.
 func (d Diagnostic) Validate() error {
 	if d.Code == "" {
 		return ErrMissingCode
@@ -141,10 +148,12 @@ func (d Diagnostic) Validate() error {
 	return nil
 }
 
+// HasTag reports whether d contains tag.
 func (d Diagnostic) HasTag(tag Tag) bool {
 	return slices.Contains(d.Tags, tag)
 }
 
+// IsSuppressed reports whether d has suppression metadata.
 func (d Diagnostic) IsSuppressed() bool {
 	return d.Suppression != nil
 }
