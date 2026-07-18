@@ -80,4 +80,3 @@ Parsers, project manifests, API data, CLI frameworks, and tool-specific caches b
 - Performance budgets and benchmarking: [docs/performance.md](docs/performance.md)
 - Contributing: [CONTRIBUTING.md](CONTRIBUTING.md)
 - Security policy: [SECURITY.md](SECURITY.md)
-- Changelog: [CHANGELOG.md](CHANGELOG.md)
