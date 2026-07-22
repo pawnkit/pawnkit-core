@@ -6,7 +6,7 @@
 pawnkit-core
     ^
     |
-pawn-parser, pawn-analysis, pawn-project, pawnfmt, pawnlint, pawn-language-server, ...
+pawn-parser, pawn-analysis, pawn-project, pawnfmt, pawnlint, pawnlsp, ...
 ```
 
 `pawnkit-spec` owns shared formats and language contracts. `pawnkit-core` owns the Go primitives used to implement them. Neither repository depends on the other.
