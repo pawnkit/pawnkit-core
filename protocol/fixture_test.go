@@ -3,6 +3,7 @@ package protocol_test
 import (
 	"encoding/json"
 	"os"
+	"reflect"
 	"testing"
 
 	"github.com/pawnkit/pawnkit-core/protocol"
@@ -84,6 +85,26 @@ func TestDiagnosticV1FixtureIsStable(t *testing.T) {
 
 	if wire.Suppressed != nil {
 		t.Fatalf("Suppressed = %+v, want nil", wire.Suppressed)
+	}
+
+	encoded, err := json.Marshal(wire)
+	if err != nil {
+		t.Fatalf("marshal fixture: %v", err)
+	}
+
+	var want, got map[string]any
+	if err := json.Unmarshal(data, &want); err != nil {
+		t.Fatalf("unmarshal expected JSON: %v", err)
+	}
+	if err := json.Unmarshal(encoded, &got); err != nil {
+		t.Fatalf("unmarshal encoded JSON: %v", err)
+	}
+
+	// Empty optional fields are omitted when encoded.
+	delete(want, "reviewFixes")
+	delete(want, "suppressed")
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("encoded JSON no longer matches the version 1 fixture:\n got  %#v\n want %#v", got, want)
 	}
 
 	reg := source.NewRegistry()

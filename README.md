@@ -79,6 +79,7 @@ Parsers, project manifests, API data, CLI frameworks, and tool-specific caches b
 
 - PawnKit organisation: <https://github.com/pawnkit>
 - Architecture and scope: [docs/architecture.md](docs/architecture.md)
+- Source and diagnostic type boundaries: [docs/type-boundaries.md](docs/type-boundaries.md)
 - Performance budgets and benchmarking: [docs/performance.md](docs/performance.md)
 - Contributing: [CONTRIBUTING.md](CONTRIBUTING.md)
 - Security policy: [SECURITY.md](SECURITY.md)

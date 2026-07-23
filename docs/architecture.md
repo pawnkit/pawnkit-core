@@ -65,6 +65,9 @@ Core owns source locations, edits, diagnostics, their wire format, and small has
 
 Logging and tool-specific caches stay with each tool.
 
+Source and diagnostic lookalikes are classified in
+[type-boundaries.md](type-boundaries.md). Wire protocols keep their own types.
+
 ## Adding something to core
 
 Core is intentionally small because every downstream repository pays for its API changes. A new package belongs here only when all of these are true:
