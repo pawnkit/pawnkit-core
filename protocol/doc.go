@@ -3,4 +3,4 @@ package protocol
 
 // DiagnosticSchemaVersion is the current version of the Diagnostic JSON
 // wire format.
-const DiagnosticSchemaVersion = 1
+const DiagnosticSchemaVersion = 2

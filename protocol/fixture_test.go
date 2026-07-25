@@ -112,3 +112,75 @@ func TestDiagnosticV1FixtureIsStable(t *testing.T) {
 		t.Fatalf("DecodeDiagnostic(fixture) error: %v", err)
 	}
 }
+
+func TestDiagnosticV2FixtureIsStable(t *testing.T) {
+	t.Parallel()
+
+	data, err := os.ReadFile("testdata/diagnostic_v2.json")
+	if err != nil {
+		t.Fatalf("reading fixture: %v", err)
+	}
+
+	var wire protocol.Diagnostic
+	if err := json.Unmarshal(data, &wire); err != nil {
+		t.Fatalf("unmarshal fixture: %v", err)
+	}
+	if wire.SchemaVersion != protocol.DiagnosticSchemaVersion {
+		t.Fatalf("SchemaVersion = %d, want %d", wire.SchemaVersion, protocol.DiagnosticSchemaVersion)
+	}
+
+	encoded, err := json.Marshal(wire)
+	if err != nil {
+		t.Fatalf("marshal fixture: %v", err)
+	}
+	var want, got map[string]any
+	if err := json.Unmarshal(data, &want); err != nil {
+		t.Fatal(err)
+	}
+	if err := json.Unmarshal(encoded, &got); err != nil {
+		t.Fatal(err)
+	}
+	delete(want, "reviewFixes")
+	delete(want, "suppressed")
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("encoded JSON no longer matches the version 2 fixture:\n got  %#v\n want %#v", got, want)
+	}
+}
+
+func TestPublishedDiagnosticV1Decodes(t *testing.T) {
+	t.Parallel()
+
+	data, err := os.ReadFile("testdata/published_diagnostic_v1.json")
+	if err != nil {
+		t.Fatalf("reading fixture: %v", err)
+	}
+	var wire protocol.Diagnostic
+	if err := json.Unmarshal(data, &wire); err != nil {
+		t.Fatalf("unmarshal fixture: %v", err)
+	}
+
+	if wire.SchemaVersion != 1 {
+		t.Fatalf("SchemaVersion = %d, want 1", wire.SchemaVersion)
+	}
+	if wire.Primary.URI != "gamemodes/example.pwn" {
+		t.Fatalf("Primary.URI = %q", wire.Primary.URI)
+	}
+	if wire.Primary.Span == nil || wire.Primary.Span.Start != 1024 || wire.Primary.Span.End != 1042 {
+		t.Fatalf("Primary.Span = %+v", wire.Primary.Span)
+	}
+	if len(wire.SafeFixes) != 1 || wire.SafeFixes[0].Kind != "safe" {
+		t.Fatalf("SafeFixes = %+v", wire.SafeFixes)
+	}
+	version := wire.SafeFixes[0].Edit.Documents[0].Version
+	if version == nil || *version != 3 {
+		t.Fatalf("Version = %v, want 3", version)
+	}
+	if wire.Suppressed != nil {
+		t.Fatalf("Suppressed = %+v, want nil", wire.Suppressed)
+	}
+
+	reg := source.NewRegistry()
+	if _, err := protocol.DecodeDiagnostic(reg, wire); err != nil {
+		t.Fatalf("DecodeDiagnostic(fixture) error: %v", err)
+	}
+}

@@ -22,9 +22,8 @@ The types in `protocol` are the JSON form of the core types. They remain
 separate because they replace file IDs with URIs, make derived ranges
 optional, and carry a schema version.
 
-The version 1 shape is frozen in
-`protocol/testdata/diagnostic_v1.json`. A wire change needs a new schema
-version and fixture.
+The supported wire shapes are frozen under `protocol/testdata`. A wire change
+needs a new schema version and fixture.
 
 ## Repository-specific types
 

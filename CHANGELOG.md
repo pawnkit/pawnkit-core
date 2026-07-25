@@ -8,6 +8,16 @@ out explicitly and include migration notes.
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-07-24
+
+### Changed
+
+- Emit version 2 diagnostics and read both published version 1 shapes.
+
+### Migration
+
+- Consumers that inspect diagnostic JSON must accept `schemaVersion: 2`.
+
 ## [0.1.1] - 2026-07-23
 
 ### Added
@@ -27,6 +37,7 @@ out explicitly and include migration notes.
 - Stable content and structured-value hashes in `hash`.
 - Runnable examples for each public package.
 
-[Unreleased]: https://github.com/pawnkit/pawnkit-core/compare/v0.1.1...HEAD
+[Unreleased]: https://github.com/pawnkit/pawnkit-core/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/pawnkit/pawnkit-core/compare/v0.1.1...v0.2.0
 [0.1.1]: https://github.com/pawnkit/pawnkit-core/compare/v0.1.0...v0.1.1
 [0.1.0]: https://github.com/pawnkit/pawnkit-core/releases/tag/v0.1.0

@@ -1,7 +1,4 @@
-// Command protocol demonstrates encoding a Diagnostic to its stable JSON
-// wire format and decoding it back, including across a simulated process
-// boundary where only the diagnostic_v1.json schema (never a FileID) is
-// shared.
+// Command protocol round-trips a diagnostic across a process boundary.
 package main
 
 import (
@@ -14,7 +11,7 @@ import (
 )
 
 func main() {
-	// --- Producer process (e.g. pawnlint) ---
+	// Producer process.
 	producer := source.NewRegistry()
 	file := producer.Intern(source.FileURI("/gamemodes/main.pwn"))
 
@@ -37,13 +34,13 @@ func main() {
 
 	fmt.Println(string(data))
 
-	// --- Consumer process (e.g. an editor/LSP) ---
+	// Consumer process.
 	var decodedWire protocol.Diagnostic
 	if err := json.Unmarshal(data, &decodedWire); err != nil {
 		panic(err)
 	}
 
-	consumer := source.NewRegistry() // a different Registry entirely.
+	consumer := source.NewRegistry()
 
 	back, err := protocol.DecodeDiagnostic(consumer, decodedWire)
 	if err != nil {

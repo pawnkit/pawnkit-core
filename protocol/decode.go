@@ -17,9 +17,9 @@ type Interner interface {
 // DecodeDiagnostic decodes a diagnostic and interns its URIs.
 // Locations require ByteSpan because source text is unavailable here.
 func DecodeDiagnostic(interner Interner, wire Diagnostic) (diagnostic.Diagnostic, error) {
-	if wire.SchemaVersion != DiagnosticSchemaVersion {
+	if wire.SchemaVersion != 1 && wire.SchemaVersion != DiagnosticSchemaVersion {
 		return diagnostic.Diagnostic{}, fmt.Errorf(
-			"%w: got %d, support %d", ErrUnsupportedSchemaVersion, wire.SchemaVersion, DiagnosticSchemaVersion,
+			"%w: got %d, support 1 and %d", ErrUnsupportedSchemaVersion, wire.SchemaVersion, DiagnosticSchemaVersion,
 		)
 	}
 

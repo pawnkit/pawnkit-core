@@ -1,0 +1,37 @@
+{
+  "code": "pawnlint:tag-mismatch",
+  "source": "pawnlint",
+  "severity": "warning",
+  "message": "Assigning an untagged value to a Float:-tagged variable without an explicit cast.",
+  "range": {
+    "file": "gamemodes/example.pwn",
+    "start": { "line": 42, "column": 5, "offset": 1024 },
+    "end": { "line": 42, "column": 23, "offset": 1042 }
+  },
+  "relatedLocations": [
+    {
+      "file": "gamemodes/example.pwn",
+      "start": { "line": 40, "column": 1, "offset": 980 },
+      "end": { "line": 40, "column": 20, "offset": 999 },
+      "message": "health declared as Float: here"
+    }
+  ],
+  "notes": ["Use Float:value or a numeric conversion native to make the intent explicit."],
+  "help": "Wrap the right-hand side in Float:(...) if this reinterpretation is intentional.",
+  "documentationUrl": "https://schemas.pawnkit.dev/pawn-diagnostic/v1/rules/tag-mismatch",
+  "tags": ["deprecated"],
+  "fixes": [
+    {
+      "file": "gamemodes/example.pwn",
+      "range": {
+        "start": { "line": 42, "column": 15, "offset": 1034 },
+        "end": { "line": 42, "column": 23, "offset": 1042 }
+      },
+      "newText": "Float:(damage)",
+      "version": 3
+    }
+  ],
+  "suppression": {
+    "suppressed": false
+  }
+}

@@ -1,0 +1,47 @@
+{
+  "schemaVersion": 2,
+  "code": "pawnlint:unused-variable",
+  "source": "pawnlint",
+  "severity": "warning",
+  "message": "variable 'x' is never used",
+  "primary": {
+    "uri": "file:///gamemode/main.pwn",
+    "span": { "start": 42, "end": 43 },
+    "range": {
+      "start": { "line": 3, "character": 8 },
+      "end": { "line": 3, "character": 9 }
+    }
+  },
+  "related": [
+    {
+      "location": {
+        "uri": "file:///gamemode/main.pwn",
+        "span": { "start": 10, "end": 11 }
+      },
+      "message": "'x' was declared here"
+    }
+  ],
+  "notes": ["removing unused locals keeps stack usage predictable"],
+  "help": "remove the variable or prefix it with an underscore",
+  "docsUrl": "https://pawnkit.dev/rules/unused-variable",
+  "tags": ["unnecessary"],
+  "safeFixes": [
+    {
+      "message": "Remove the unused declaration",
+      "kind": "safe",
+      "edit": {
+        "documents": [
+          {
+            "uri": "file:///gamemode/main.pwn",
+            "version": 7,
+            "edits": [
+              { "span": { "start": 30, "end": 44 }, "newText": "" }
+            ]
+          }
+        ]
+      }
+    }
+  ],
+  "reviewFixes": [],
+  "suppressed": null
+}

@@ -10,13 +10,17 @@ The module supports the two most recent stable Go releases. CI tests the version
 
 ## Diagnostic JSON
 
-`protocol.DiagnosticSchemaVersion` identifies the JSON contract. The current version is 1.
+`protocol.DiagnosticSchemaVersion` identifies the JSON contract. The current
+version is 2.
 
 An optional field may be added without changing the schema version if existing fields keep the same meaning. Renaming, removing, repurposing, or changing the type of a field requires a new schema version.
 
-`protocol.DecodeDiagnostic` rejects unsupported versions. It does not guess. During a future transition, core will keep a reader for at least the previous stable schema.
+`protocol.DecodeDiagnostic` reads versions 1 and 2 and rejects other versions.
+Version 1 had two published shapes, so JSON decoding recognises both before
+mapping them to the core model.
 
-Each schema version has a frozen fixture under `protocol/testdata`. Add a new fixture for a new version; do not rewrite an old one.
+Frozen fixtures under `protocol/testdata` cover both v1 shapes and v2. Add a
+fixture for a new version; do not rewrite an old one.
 
 ## Diagnostic codes
 
