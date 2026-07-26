@@ -12,6 +12,7 @@ import (
 type LineIndex struct {
 	content      string
 	contentBytes []byte
+	buffer       *TextBuffer
 	byteBacked   bool
 	lineStarts   []Offset // lineStarts[i] is the byte offset where line i begins; lineStarts[0] == 0.
 }
@@ -25,6 +26,20 @@ func NewLineIndex(content string) *LineIndex {
 // NewLineIndexBytes builds an index that retains immutable content.
 func NewLineIndexBytes(content []byte) *LineIndex {
 	return newLineIndex("", content, true)
+}
+
+// NewBufferedLineIndex builds an index over a persistent source buffer.
+func NewBufferedLineIndex(buffer *TextBuffer) *LineIndex {
+	if buffer == nil {
+		return &LineIndex{}
+	}
+	starts := []Offset{0}
+	for offset := range buffer.Len() {
+		if buffer.byteAt(offset) == '\n' {
+			starts = append(starts, Offset(offset+1))
+		}
+	}
+	return &LineIndex{buffer: buffer, lineStarts: starts}
 }
 
 func newLineIndex(content string, contentBytes []byte, byteBacked bool) *LineIndex {
@@ -54,10 +69,20 @@ func (idx *LineIndex) Apply(start, end Offset, replacement string) (*LineIndex, 
 		return nil, fmt.Errorf("%w: replacement range [%d,%d)", ErrInvalidSpan, start, end)
 	}
 
-	content := make([]byte, 0, idx.contentLen()-int(end-start)+len(replacement))
-	content = idx.appendContent(content, 0, int(start))
-	content = append(content, replacement...)
-	content = idx.appendContent(content, int(end), idx.contentLen())
+	var nextBuffer *TextBuffer
+	var content []byte
+	if idx.buffer != nil {
+		var err error
+		nextBuffer, err = idx.buffer.Apply(start, end, replacement)
+		if err != nil {
+			return nil, err
+		}
+	} else {
+		content = make([]byte, 0, idx.contentLen()-int(end-start)+len(replacement))
+		content = idx.appendContent(content, 0, int(start))
+		content = append(content, replacement...)
+		content = idx.appendContent(content, int(end), idx.contentLen())
+	}
 
 	starts := make([]Offset, 0, len(idx.lineStarts))
 	for _, lineStart := range idx.lineStarts {
@@ -79,6 +104,9 @@ func (idx *LineIndex) Apply(start, end Offset, replacement string) (*LineIndex, 
 		starts = appendUniqueOffset(starts, lineStart+delta)
 	}
 
+	if nextBuffer != nil {
+		return &LineIndex{buffer: nextBuffer, lineStarts: starts}, nil
+	}
 	return &LineIndex{contentBytes: content, byteBacked: true, lineStarts: starts}, nil
 }
 
@@ -91,6 +119,9 @@ func appendUniqueOffset(offsets []Offset, offset Offset) []Offset {
 
 // Content returns the indexed text.
 func (idx *LineIndex) Content() string {
+	if idx.buffer != nil {
+		return string(idx.buffer.Bytes())
+	}
 	if idx.byteBacked {
 		return string(idx.contentBytes)
 	}
@@ -103,10 +134,21 @@ func (idx *LineIndex) Bytes() []byte {
 	if idx == nil {
 		return nil
 	}
+	if idx.buffer != nil {
+		return idx.buffer.Bytes()
+	}
 	if idx.byteBacked {
 		return idx.contentBytes
 	}
 	return []byte(idx.content)
+}
+
+// TextBuffer returns the persistent source buffer when configured.
+func (idx *LineIndex) TextBuffer() *TextBuffer {
+	if idx == nil {
+		return nil
+	}
+	return idx.buffer
 }
 
 // LineCount returns the number of lines; always at least 1, even for empty content.
@@ -296,6 +338,9 @@ func byteAt(content string, contentBytes []byte, byteBacked bool, offset int) by
 }
 
 func (idx *LineIndex) contentLen() int {
+	if idx.buffer != nil {
+		return idx.buffer.Len()
+	}
 	if idx.byteBacked {
 		return len(idx.contentBytes)
 	}
@@ -303,6 +348,9 @@ func (idx *LineIndex) contentLen() int {
 }
 
 func (idx *LineIndex) at(offset int) byte {
+	if idx.buffer != nil {
+		return idx.buffer.byteAt(offset)
+	}
 	return byteAt(idx.content, idx.contentBytes, idx.byteBacked, offset)
 }
 
@@ -314,6 +362,9 @@ func (idx *LineIndex) appendContent(dst []byte, start, end int) []byte {
 }
 
 func (idx *LineIndex) countCharacters(start, end int, enc Encoding) int {
+	if idx.buffer != nil {
+		return idx.buffer.countCharacters(start, end, enc)
+	}
 	if !idx.byteBacked {
 		return countCharacters(idx.content[start:end], enc)
 	}
@@ -340,6 +391,9 @@ func (idx *LineIndex) countCharacters(start, end int, enc Encoding) int {
 }
 
 func (idx *LineIndex) advanceCharacters(start, end, count int, enc Encoding) (int, bool) {
+	if idx.buffer != nil {
+		return idx.buffer.advanceCharacters(start, end, count, enc)
+	}
 	if !idx.byteBacked {
 		return advanceCharacters(idx.content[start:end], count, enc)
 	}

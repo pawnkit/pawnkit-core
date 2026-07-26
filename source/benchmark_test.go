@@ -69,6 +69,57 @@ func BenchmarkByteLineIndexApply(b *testing.B) {
 	}
 }
 
+func BenchmarkTextBufferApply(b *testing.B) {
+	content := []byte(largeSyntheticFile(50_000))
+	buffer := source.NewTextBuffer(content)
+	offset := source.Offset(len(content) / 2)
+	b.ReportAllocs()
+	b.SetBytes(int64(len(content)))
+	b.ResetTimer()
+
+	for b.Loop() {
+		if _, err := buffer.Apply(offset, offset, "x"); err != nil {
+			b.Fatal(err)
+		}
+	}
+}
+
+func BenchmarkTextBufferApplyAndFlatten(b *testing.B) {
+	content := []byte(largeSyntheticFile(50_000))
+	buffer := source.NewTextBuffer(content)
+	offset := source.Offset(len(content) / 2)
+	b.ReportAllocs()
+	b.SetBytes(int64(len(content)))
+	b.ResetTimer()
+
+	for b.Loop() {
+		next, err := buffer.Apply(offset, offset, "x")
+		if err != nil {
+			b.Fatal(err)
+		}
+		_ = next.Bytes()
+	}
+}
+
+func BenchmarkBufferedLineIndexApply(b *testing.B) {
+	content := []byte(largeSyntheticFile(50_000))
+	index := source.NewBufferedLineIndex(source.NewTextBuffer(content))
+	offset := source.Offset(len(content) / 2)
+	b.ReportAllocs()
+	b.SetBytes(int64(len(content)))
+	b.ResetTimer()
+
+	for b.Loop() {
+		next, err := index.Apply(offset, offset, "x")
+		if err != nil {
+			b.Fatal(err)
+		}
+		if next.TextBuffer().Len() != len(content)+1 {
+			b.Fatal("unexpected content length")
+		}
+	}
+}
+
 func BenchmarkPositionUTF16(b *testing.B) {
 	content := largeSyntheticFile(50_000)
 	idx := source.NewLineIndex(content)

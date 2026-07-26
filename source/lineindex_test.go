@@ -228,6 +228,27 @@ func TestLineIndexBytesApplyRetainsOneBuffer(t *testing.T) {
 	}
 }
 
+func TestBufferedLineIndexMatchesRebuild(t *testing.T) {
+	t.Parallel()
+	buffer := source.NewTextBuffer([]byte("first 😀\nsecond\n"))
+	index := source.NewBufferedLineIndex(buffer)
+	next, err := index.Apply(6, 10, "Pawn")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if next.TextBuffer() == nil {
+		t.Fatal("buffered edit lost its text buffer")
+	}
+	want := source.NewLineIndex("first Pawn\nsecond\n")
+	for offset := range next.TextBuffer().Len() + 1 {
+		gotPosition, gotErr := next.Position(source.Offset(offset), source.UTF16)
+		wantPosition, wantErr := want.Position(source.Offset(offset), source.UTF16)
+		if !errors.Is(gotErr, wantErr) || gotPosition != wantPosition {
+			t.Fatalf("Position(%d) = (%v, %v), want (%v, %v)", offset, gotPosition, gotErr, wantPosition, wantErr)
+		}
+	}
+}
+
 func TestLineIndexApplyRejectsInvalidRange(t *testing.T) {
 	t.Parallel()
 
