@@ -1,0 +1,14 @@
+{
+  "schemaVersion": 1,
+  "repository": "pawnkit/pawnkit-core",
+  "maturity": "preview",
+  "platforms": ["linux-amd64"],
+  "profiles": [],
+  "compilers": [],
+  "contracts": [
+    { "name": "pawn-diagnostic", "major": 2 }
+  ],
+  "limitations": [
+    "Windows and macOS builds are not tested in this repository."
+  ]
+}

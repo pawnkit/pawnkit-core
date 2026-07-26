@@ -1,5 +1,7 @@
 # pawnkit-core
 
+[![Maturity: preview](https://img.shields.io/badge/maturity-preview-blue)](.pawnkit/support.json)
+
 `pawnkit-core` contains the small Go types shared by PawnKit tools: source positions, text edits, diagnostics, and their JSON wire format.
 
 This keeps a diagnostic or workspace edit consistent as it moves between the parser, linter, CLI, and editor. The module has no dependency on another PawnKit repository.

@@ -8,6 +8,12 @@ out explicitly and include migration notes.
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-07-25
+
+### Changed
+
+- Added the repository support record with CI validation.
+
 ## [0.2.0] - 2026-07-24
 
 ### Changed
