@@ -3,6 +3,7 @@ package source
 import (
 	"fmt"
 	"sort"
+	"strings"
 	"unicode/utf16"
 	"unicode/utf8"
 )
@@ -26,6 +27,51 @@ func NewLineIndex(content string) *LineIndex {
 	}
 
 	return &LineIndex{content: content, lineStarts: starts}
+}
+
+// Apply returns an index for one byte-range replacement.
+func (idx *LineIndex) Apply(start, end Offset, replacement string) (*LineIndex, error) {
+	if idx == nil {
+		return nil, fmt.Errorf("%w: nil line index", ErrInvalidSpan)
+	}
+	if !idx.ValidOffset(start) || !idx.ValidOffset(end) || end < start {
+		return nil, fmt.Errorf("%w: replacement range [%d,%d)", ErrInvalidSpan, start, end)
+	}
+
+	var content strings.Builder
+	content.Grow(len(idx.content) - int(end-start) + len(replacement))
+	content.WriteString(idx.content[:start])
+	content.WriteString(replacement)
+	content.WriteString(idx.content[end:])
+
+	starts := make([]Offset, 0, len(idx.lineStarts))
+	for _, lineStart := range idx.lineStarts {
+		if lineStart > start {
+			break
+		}
+		starts = append(starts, lineStart)
+	}
+	for i := range len(replacement) {
+		if replacement[i] == '\n' {
+			starts = appendUniqueOffset(starts, start+Offset(i+1))
+		}
+	}
+	delta := Offset(len(replacement)) - (end - start)
+	suffix := sort.Search(len(idx.lineStarts), func(i int) bool {
+		return idx.lineStarts[i] > end
+	})
+	for _, lineStart := range idx.lineStarts[suffix:] {
+		starts = appendUniqueOffset(starts, lineStart+delta)
+	}
+
+	return &LineIndex{content: content.String(), lineStarts: starts}, nil
+}
+
+func appendUniqueOffset(offsets []Offset, offset Offset) []Offset {
+	if len(offsets) == 0 || offsets[len(offsets)-1] != offset {
+		return append(offsets, offset)
+	}
+	return offsets
 }
 
 // Content returns the indexed text.

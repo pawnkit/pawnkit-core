@@ -60,6 +60,38 @@ func FuzzLineIndexPosition(f *testing.F) {
 	})
 }
 
+func FuzzLineIndexApply(f *testing.F) {
+	f.Add("one\ntwo\n", 4, 7, "second")
+	f.Add("café\r\nnext", 3, 5, "at")
+	f.Add("", 0, 0, "new\n")
+
+	f.Fuzz(func(t *testing.T, content string, start, end int, replacement string) {
+		if start < 0 || end < start || end > len(content) {
+			return
+		}
+		index := source.NewLineIndex(content)
+		if !index.ValidOffset(source.Offset(start)) || !index.ValidOffset(source.Offset(end)) {
+			return
+		}
+		got, err := index.Apply(source.Offset(start), source.Offset(end), replacement)
+		if err != nil {
+			t.Fatalf("Apply() error: %v", err)
+		}
+		wantContent := content[:start] + replacement + content[end:]
+		want := source.NewLineIndex(wantContent)
+		if got.Content() != want.Content() || got.LineCount() != want.LineCount() {
+			t.Fatalf("Apply() = %q with %d lines, want %q with %d lines", got.Content(), got.LineCount(), want.Content(), want.LineCount())
+		}
+		for line := range want.LineCount() {
+			gotStart, _ := got.LineStart(line)
+			wantStart, _ := want.LineStart(line)
+			if gotStart != wantStart {
+				t.Fatalf("LineStart(%d) = %d, want %d", line, gotStart, wantStart)
+			}
+		}
+	})
+}
+
 // FuzzFileURIFilename asserts the FileURI/Filename round trip never panics.
 func FuzzFileURIFilename(f *testing.F) {
 	seeds := []string{

@@ -162,6 +162,63 @@ func TestLineIndexTrailingNewlineCreatesEmptyFinalLine(t *testing.T) {
 	}
 }
 
+func TestLineIndexApplyMatchesRebuild(t *testing.T) {
+	t.Parallel()
+
+	const twoLines = "one\ntwo\n"
+	tests := []struct {
+		name        string
+		content     string
+		start       source.Offset
+		end         source.Offset
+		replacement string
+	}{
+		{"insert into empty", "", 0, 0, "text"},
+		{"insert text", twoLines, 5, 5, "X"},
+		{"insert lines", twoLines, 4, 4, "new\nlines\n"},
+		{"replace lines", "one\ntwo\nthree\n", 4, 8, "second\n"},
+		{"delete newline", twoLines, 3, 4, ""},
+		{"replace all", twoLines, 0, 8, "single"},
+		{"unicode", "café\nnext\n", 2, 5, "at"},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			t.Parallel()
+
+			index, err := source.NewLineIndex(test.content).Apply(test.start, test.end, test.replacement)
+			if err != nil {
+				t.Fatalf("Apply() error: %v", err)
+			}
+			wantContent := test.content[:test.start] + test.replacement + test.content[test.end:]
+			want := source.NewLineIndex(wantContent)
+			if index.Content() != wantContent {
+				t.Fatalf("Content() = %q, want %q", index.Content(), wantContent)
+			}
+			if index.LineCount() != want.LineCount() {
+				t.Fatalf("LineCount() = %d, want %d", index.LineCount(), want.LineCount())
+			}
+			for line := range want.LineCount() {
+				gotStart, gotErr := index.LineStart(line)
+				wantStart, wantErr := want.LineStart(line)
+				if gotStart != wantStart || !errors.Is(gotErr, wantErr) {
+					t.Fatalf("LineStart(%d) = (%d, %v), want (%d, %v)", line, gotStart, gotErr, wantStart, wantErr)
+				}
+			}
+		})
+	}
+}
+
+func TestLineIndexApplyRejectsInvalidRange(t *testing.T) {
+	t.Parallel()
+
+	index := source.NewLineIndex("café")
+	for _, span := range [][2]source.Offset{{3, 4}, {5, 4}, {0, 10}} {
+		if _, err := index.Apply(span[0], span[1], "x"); !errors.Is(err, source.ErrInvalidSpan) {
+			t.Fatalf("Apply(%d, %d) error = %v, want ErrInvalidSpan", span[0], span[1], err)
+		}
+	}
+}
+
 func TestLineIndexLoneCRIsNotABreak(t *testing.T) {
 	t.Parallel()
 
