@@ -208,6 +208,26 @@ func TestLineIndexApplyMatchesRebuild(t *testing.T) {
 	}
 }
 
+func TestLineIndexBytesApplyRetainsOneBuffer(t *testing.T) {
+	t.Parallel()
+	content := []byte("first\nsecond\n")
+	index := source.NewLineIndexBytes(content)
+	if &index.Bytes()[0] != &content[0] {
+		t.Fatal("byte index copied its input")
+	}
+
+	next, err := index.Apply(6, 12, "changed")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := string(next.Bytes()); got != "first\nchanged\n" {
+		t.Fatalf("Bytes() = %q", got)
+	}
+	if next.Content() != string(next.Bytes()) {
+		t.Fatal("Content and Bytes differ")
+	}
+}
+
 func TestLineIndexApplyRejectsInvalidRange(t *testing.T) {
 	t.Parallel()
 

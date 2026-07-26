@@ -3,7 +3,6 @@ package source
 import (
 	"fmt"
 	"sort"
-	"strings"
 	"unicode/utf16"
 	"unicode/utf8"
 )
@@ -11,22 +10,39 @@ import (
 // LineIndex maps byte offsets to positions in immutable text.
 // Use [NewLineIndex]; the zero value is unusable.
 type LineIndex struct {
-	content    string
-	lineStarts []Offset // lineStarts[i] is the byte offset where line i begins; lineStarts[0] == 0.
+	content      string
+	contentBytes []byte
+	byteBacked   bool
+	lineStarts   []Offset // lineStarts[i] is the byte offset where line i begins; lineStarts[0] == 0.
 }
 
 // NewLineIndex builds a LineIndex over content. content is retained, not
 // copied; callers must treat it as immutable.
 func NewLineIndex(content string) *LineIndex {
+	return newLineIndex(content, nil, false)
+}
+
+// NewLineIndexBytes builds an index that retains immutable content.
+func NewLineIndexBytes(content []byte) *LineIndex {
+	return newLineIndex("", content, true)
+}
+
+func newLineIndex(content string, contentBytes []byte, byteBacked bool) *LineIndex {
 	starts := []Offset{0}
 
-	for i := range len(content) {
-		if content[i] == '\n' {
+	length := len(content)
+	if byteBacked {
+		length = len(contentBytes)
+	}
+	for i := range length {
+		if byteAt(content, contentBytes, byteBacked, i) == '\n' {
 			starts = append(starts, Offset(i+1))
 		}
 	}
 
-	return &LineIndex{content: content, lineStarts: starts}
+	return &LineIndex{
+		content: content, contentBytes: contentBytes, byteBacked: byteBacked, lineStarts: starts,
+	}
 }
 
 // Apply returns an index for one byte-range replacement.
@@ -38,11 +54,10 @@ func (idx *LineIndex) Apply(start, end Offset, replacement string) (*LineIndex, 
 		return nil, fmt.Errorf("%w: replacement range [%d,%d)", ErrInvalidSpan, start, end)
 	}
 
-	var content strings.Builder
-	content.Grow(len(idx.content) - int(end-start) + len(replacement))
-	content.WriteString(idx.content[:start])
-	content.WriteString(replacement)
-	content.WriteString(idx.content[end:])
+	content := make([]byte, 0, idx.contentLen()-int(end-start)+len(replacement))
+	content = idx.appendContent(content, 0, int(start))
+	content = append(content, replacement...)
+	content = idx.appendContent(content, int(end), idx.contentLen())
 
 	starts := make([]Offset, 0, len(idx.lineStarts))
 	for _, lineStart := range idx.lineStarts {
@@ -64,7 +79,7 @@ func (idx *LineIndex) Apply(start, end Offset, replacement string) (*LineIndex, 
 		starts = appendUniqueOffset(starts, lineStart+delta)
 	}
 
-	return &LineIndex{content: content.String(), lineStarts: starts}, nil
+	return &LineIndex{contentBytes: content, byteBacked: true, lineStarts: starts}, nil
 }
 
 func appendUniqueOffset(offsets []Offset, offset Offset) []Offset {
@@ -76,7 +91,22 @@ func appendUniqueOffset(offsets []Offset, offset Offset) []Offset {
 
 // Content returns the indexed text.
 func (idx *LineIndex) Content() string {
+	if idx.byteBacked {
+		return string(idx.contentBytes)
+	}
 	return idx.content
+}
+
+// Bytes returns the indexed content without copying.
+// Callers must not modify the returned slice.
+func (idx *LineIndex) Bytes() []byte {
+	if idx == nil {
+		return nil
+	}
+	if idx.byteBacked {
+		return idx.contentBytes
+	}
+	return []byte(idx.content)
 }
 
 // LineCount returns the number of lines; always at least 1, even for empty content.
@@ -87,15 +117,15 @@ func (idx *LineIndex) LineCount() int {
 // ValidOffset reports whether off is within [0, len(content)] and does not
 // split a multi-byte UTF-8 rune.
 func (idx *LineIndex) ValidOffset(off Offset) bool {
-	if off < 0 || int(off) > len(idx.content) {
+	if off < 0 || int(off) > idx.contentLen() {
 		return false
 	}
 
-	if int(off) == len(idx.content) {
+	if int(off) == idx.contentLen() {
 		return true
 	}
 
-	return idx.content[off]&0xC0 != 0x80
+	return idx.at(int(off))&0xC0 != 0x80
 }
 
 // LineStart returns the byte offset where line begins. Lines are numbered from 0.
@@ -117,9 +147,9 @@ func (idx *LineIndex) LineEnd(line int) (Offset, error) {
 
 	if line+1 < len(idx.lineStarts) {
 		end := idx.lineStarts[line+1]
-		if end > start && idx.content[end-1] == '\n' {
+		if end > start && idx.at(int(end-1)) == '\n' {
 			end--
-			if end > start && idx.content[end-1] == '\r' {
+			if end > start && idx.at(int(end-1)) == '\r' {
 				end--
 			}
 		}
@@ -127,7 +157,7 @@ func (idx *LineIndex) LineEnd(line int) (Offset, error) {
 		return end, nil
 	}
 
-	return Offset(len(idx.content)), nil
+	return Offset(idx.contentLen()), nil
 }
 
 // LineSpan returns the Span covering line's content, excluding its terminator.
@@ -148,7 +178,7 @@ func (idx *LineIndex) LineSpan(file FileID, line int) (Span, error) {
 // LineAt returns the (0-based) line number containing byte offset off.
 func (idx *LineIndex) LineAt(off Offset) (int, error) {
 	if !idx.ValidOffset(off) {
-		return 0, fmt.Errorf("%w: %d (content length %d)", ErrOffsetOutOfRange, off, len(idx.content))
+		return 0, fmt.Errorf("%w: %d (content length %d)", ErrOffsetOutOfRange, off, idx.contentLen())
 	}
 
 	// Largest i such that lineStarts[i] <= off.
@@ -163,8 +193,8 @@ func (idx *LineIndex) LineAt(off Offset) (int, error) {
 // to count characters within the line.
 func (idx *LineIndex) Position(off Offset, enc Encoding) (Position, error) {
 	if !idx.ValidOffset(off) {
-		if off < 0 || int(off) > len(idx.content) {
-			return Position{}, fmt.Errorf("%w: %d (content length %d)", ErrOffsetOutOfRange, off, len(idx.content))
+		if off < 0 || int(off) > idx.contentLen() {
+			return Position{}, fmt.Errorf("%w: %d (content length %d)", ErrOffsetOutOfRange, off, idx.contentLen())
 		}
 
 		return Position{}, fmt.Errorf("%w: offset %d", ErrInvalidUTF8Boundary, off)
@@ -188,7 +218,7 @@ func (idx *LineIndex) Position(off Offset, enc Encoding) (Position, error) {
 		return Position{}, fmt.Errorf("%w: offset %d falls inside the line terminator of line %d", ErrOffsetInLineTerminator, off, line)
 	}
 
-	character := countCharacters(idx.content[start:off], enc)
+	character := idx.countCharacters(int(start), int(off), enc)
 
 	return Position{Line: line, Character: character}, nil
 }
@@ -210,7 +240,7 @@ func (idx *LineIndex) Offset(pos Position, enc Encoding) (Offset, error) {
 		return 0, fmt.Errorf("%w: negative character %d", ErrColumnOutOfRange, pos.Character)
 	}
 
-	off, ok := advanceCharacters(idx.content[start:end], pos.Character, enc)
+	off, ok := idx.advanceCharacters(int(start), int(end), pos.Character, enc)
 	if !ok {
 		return 0, fmt.Errorf(
 			"%w: character %d splits a UTF-16 surrogate pair on line %d",
@@ -256,6 +286,100 @@ func (idx *LineIndex) Span(file FileID, rng Range, enc Encoding) (Span, error) {
 	}
 
 	return Span{File: file, Start: start, End: end}, nil
+}
+
+func byteAt(content string, contentBytes []byte, byteBacked bool, offset int) byte {
+	if byteBacked {
+		return contentBytes[offset]
+	}
+	return content[offset]
+}
+
+func (idx *LineIndex) contentLen() int {
+	if idx.byteBacked {
+		return len(idx.contentBytes)
+	}
+	return len(idx.content)
+}
+
+func (idx *LineIndex) at(offset int) byte {
+	return byteAt(idx.content, idx.contentBytes, idx.byteBacked, offset)
+}
+
+func (idx *LineIndex) appendContent(dst []byte, start, end int) []byte {
+	if idx.byteBacked {
+		return append(dst, idx.contentBytes[start:end]...)
+	}
+	return append(dst, idx.content[start:end]...)
+}
+
+func (idx *LineIndex) countCharacters(start, end int, enc Encoding) int {
+	if !idx.byteBacked {
+		return countCharacters(idx.content[start:end], enc)
+	}
+	switch enc {
+	case UTF8:
+		return end - start
+	case UTF32:
+		return utf8.RuneCount(idx.contentBytes[start:end])
+	case UTF16:
+		count := 0
+		for start < end {
+			r, width := utf8.DecodeRune(idx.contentBytes[start:end])
+			start += width
+			units := utf16.RuneLen(r)
+			if units < 0 {
+				units = 1
+			}
+			count += units
+		}
+		return count
+	default:
+		return end - start
+	}
+}
+
+func (idx *LineIndex) advanceCharacters(start, end, count int, enc Encoding) (int, bool) {
+	if !idx.byteBacked {
+		return advanceCharacters(idx.content[start:end], count, enc)
+	}
+	return advanceCharacterBytes(idx.contentBytes[start:end], count, enc)
+}
+
+func advanceCharacterBytes(content []byte, count int, enc Encoding) (offset int, ok bool) {
+	if count == 0 {
+		return 0, true
+	}
+	if enc == UTF8 {
+		if count > len(content) {
+			return -1, true
+		}
+		return count, true
+	}
+
+	remaining := count
+	for offset < len(content) {
+		if remaining == 0 {
+			return offset, true
+		}
+		r, width := utf8.DecodeRune(content[offset:])
+		units := 1
+		if enc == UTF16 {
+			units = utf16.RuneLen(r)
+			if units < 0 {
+				units = 1
+			}
+			if remaining < units {
+				return 0, false
+			}
+		}
+		offset += width
+		remaining -= units
+	}
+	if remaining == 0 {
+		return offset, true
+	}
+	return -1, true
 }
 
 func countCharacters(s string, enc Encoding) int {

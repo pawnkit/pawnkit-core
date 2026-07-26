@@ -6,7 +6,11 @@ Notable changes to `pawnkit-core` are documented here. The format follows
 The module uses semantic version tags. Before 1.0, breaking changes are called
 out explicitly and include migration notes.
 
-## [Unreleased]
+## [0.4.0] - 2026-07-26
+
+### Added
+
+- Added byte-backed line indexes for editor buffers.
 
 ## [0.3.0] - 2026-07-26
 
@@ -49,7 +53,8 @@ out explicitly and include migration notes.
 - Stable content and structured-value hashes in `hash`.
 - Runnable examples for each public package.
 
-[Unreleased]: https://github.com/pawnkit/pawnkit-core/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/pawnkit/pawnkit-core/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/pawnkit/pawnkit-core/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/pawnkit/pawnkit-core/compare/v0.2.1...v0.3.0
 [0.2.1]: https://github.com/pawnkit/pawnkit-core/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/pawnkit/pawnkit-core/compare/v0.1.1...v0.2.0

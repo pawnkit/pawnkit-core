@@ -50,6 +50,25 @@ func BenchmarkLineIndexApply(b *testing.B) {
 	}
 }
 
+func BenchmarkByteLineIndexApply(b *testing.B) {
+	content := []byte(largeSyntheticFile(50_000))
+	index := source.NewLineIndexBytes(content)
+	offset := source.Offset(len(content) / 2)
+	b.ReportAllocs()
+	b.SetBytes(int64(len(content)))
+	b.ResetTimer()
+
+	for b.Loop() {
+		next, err := index.Apply(offset, offset, "x")
+		if err != nil {
+			b.Fatal(err)
+		}
+		if len(next.Bytes()) != len(content)+1 {
+			b.Fatal("unexpected content length")
+		}
+	}
+}
+
 func BenchmarkPositionUTF16(b *testing.B) {
 	content := largeSyntheticFile(50_000)
 	idx := source.NewLineIndex(content)
